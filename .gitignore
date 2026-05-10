@@ -1,5 +1,6 @@
 .env
-logs/
+slot_*.env
+logs*/
 __pycache__/
 *.pyc
 .nonce.dat
