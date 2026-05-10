@@ -84,6 +84,9 @@ class BaseExchange(ABC):
         return True
 
     async def wait_for_fill(self, order_id: str, timeout: float = 30.0) -> Optional[OrderResult]:
+        """기본 구현: timeout만큼 대기 (거래소별 override 권장)."""
+        import asyncio
+        await asyncio.sleep(min(timeout, 30.0))
         return None
 
     async def is_healthy(self) -> bool:

@@ -406,6 +406,9 @@ class Engine:
 
     async def _state_hold(self):
         pos = self.bot_state.position
+        if not pos:
+            self._transition(State.IDLE)
+            return
         await asyncio.sleep(30)
 
         if await self._positions_at_dust(pos):
@@ -429,6 +432,8 @@ class Engine:
         # 가격 괴리 감시
         m_sym = self._maker.map_symbol(pos.pair)
         t_sym = self._taker.map_symbol(pos.pair)
+        m_mark = 0.0
+        t_mark = 0.0
         try:
             m_mark = await self._maker.get_mark_price(m_sym)
             t_mark = await self._taker.get_mark_price(t_sym)
@@ -449,18 +454,19 @@ class Engine:
             pass
 
         # taker 마진 실측
+        taker_margin_pct = 100.0
         try:
             t_pos_size = abs(await self._taker.get_position_signed_size(t_sym))
-            t_notional = t_pos_size * t_mark if t_mark > 0 else 0
-            taker_margin_pct = (t_bal.equity / t_notional * 100) if t_notional > 0 else 100.0
+            mark_for_margin = t_mark if t_mark > 0 else m_mark
+            t_notional = t_pos_size * mark_for_margin if mark_for_margin > 0 else 0
+            if t_notional > 0:
+                taker_margin_pct = t_bal.equity / t_notional * 100
         except Exception:
-            taker_margin_pct = 100.0
+            pass
 
         # spread_mtm 실측 계산
-        try:
-            spread_mtm = self._calc_spread_mtm(pos, m_mark)
-        except Exception:
-            spread_mtm = 0.0
+        mark_for_spread = m_mark if m_mark > 0 else pos.avg_entry_price
+        spread_mtm = self._calc_spread_mtm(pos, mark_for_spread)
 
         # 즉시 손절 (min_hold 무시)
         pnl = current_total - pos.entry_total_balance
@@ -509,6 +515,9 @@ class Engine:
 
     async def _state_hold_suspended(self):
         pos = self.bot_state.position
+        if not pos:
+            self._transition(State.IDLE)
+            return
         suspended_since = self.bot_state.suspended_since or time.time()
         elapsed = time.time() - suspended_since
 
@@ -550,6 +559,9 @@ class Engine:
 
     async def _execute_exit(self):
         pos = self.bot_state.position
+        if not pos:
+            self._transition(State.IDLE)
+            return
         m_sym = self._maker.map_symbol(pos.pair)
 
         # cancel_all 검증
@@ -855,33 +867,36 @@ class Engine:
 
         # Taker 청산 + 단계적 슬리피지 (EXIT slippage escalation)
         slippages = [0.005, 0.01, self.cfg.EMERGENCY_CLOSE_SLIPPAGE_PCT]
+        t_tick = self.cfg.get_tick_sizes(self._taker.name).get(pos.pair, 0.1)
+        t_exit_sign = -1.0 if t_close_side == "SELL" else 1.0
+
+        # 기준점: 첫 t_before 스냅샷으로 누적 계산
+        t_baseline = await self._get_position_strict(self._taker, t_sym)
+        if t_baseline is None:
+            await self._tg.send_alert(
+                f"<b>[🚨 EXIT 불균형]</b> Taker API 장애!\n"
+                f"📡 {self._pair_label}\n"
+                f"Maker {actual_filled:.6f} 이미 청산됨"
+            )
+            return 0.0
+
         t_closed = 0.0
         for slip_idx, slip_pct in enumerate(slippages):
             try:
-                t_tick = self.cfg.get_tick_sizes(self._taker.name).get(pos.pair, 0.1)
                 t_price = fill_price * (1 + slip_pct) if t_close_side == "BUY" else fill_price * (1 - slip_pct)
                 t_price = _quantize_to_tick(t_price, t_tick)
-                t_before = await self._get_position_strict(self._taker, t_sym)
-                if t_before is None:
-                    await self._tg.send_alert(
-                        f"<b>[🚨 EXIT 불균형]</b> Taker API 장애!\n"
-                        f"📡 {self._pair_label}\n"
-                        f"Maker {actual_filled:.6f} 이미 청산됨"
-                    )
-                    return 0.0
                 remaining_to_close = actual_filled - t_closed
                 if remaining_to_close < 1e-8:
                     break
                 await self._taker.place_limit_order(
                     t_sym, t_close_side, t_price, remaining_to_close, reduce_only=True, post_only=False,
                 )
-                t_exit_sign = -1.0 if t_close_side == "SELL" else 1.0
                 for poll in range(3):
                     await asyncio.sleep(3)
                     t_after = await self._get_position_strict(self._taker, t_sym)
                     if t_after is None:
                         continue
-                    t_closed = max(0.0, (t_before - t_after) * (-t_exit_sign))
+                    t_closed = max(0.0, (t_baseline - t_after) * (-t_exit_sign))
                     if t_closed >= actual_filled * 0.9:
                         break
                 if t_closed >= actual_filled * 0.9:
