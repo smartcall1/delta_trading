@@ -75,6 +75,8 @@ class RiseXExchange(BaseExchange):
             reduce_only=reduce_only, post_only=post_only,
             client_order_id=client_order_id,
         )
+        if not isinstance(resp, dict) or resp.get("error"):
+            raise RuntimeError(f"RiseX order failed: {resp}")
         data = resp.get("data", resp)
         oid = str(data.get("order_id", data.get("sc_order_id", "unknown")))
         return OrderResult(order_id=oid, status="live")

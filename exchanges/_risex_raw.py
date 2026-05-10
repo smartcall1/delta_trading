@@ -167,7 +167,10 @@ class RiseXClient:
         if isinstance(sig_bytes, bytes):
             sig_b64 = base64.b64encode(sig_bytes).decode()
         else:
-            sig_b64 = base64.b64encode(bytes.fromhex(hex(sig_bytes)[2:])).decode()
+            hex_str = hex(sig_bytes)[2:]
+            if len(hex_str) % 2:
+                hex_str = "0" + hex_str
+            sig_b64 = base64.b64encode(bytes.fromhex(hex_str)).decode()
 
         return {
             "account": self._account,

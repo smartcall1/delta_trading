@@ -70,7 +70,11 @@ class HotstuffExchange(BaseExchange):
             reduce_only=reduce_only, post_only=post_only,
             client_order_id=client_order_id,
         )
-        oid = str(resp.get("data", {}).get("status", {}).get("oid", "unknown"))
+        data = resp.get("data") if isinstance(resp, dict) else None
+        if not data or resp.get("error"):
+            raise RuntimeError(f"Hotstuff order failed: {resp}")
+        status = data.get("status") or {}
+        oid = str(status.get("oid", "unknown"))
         return OrderResult(order_id=oid, status="live")
 
     async def place_market_order(

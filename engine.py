@@ -94,6 +94,7 @@ class Engine:
             lines.append(f"📊 {s.state.value}")
         lines.append("━" * 16)
 
+        total = None
         try:
             m_bal = await self._maker.get_balance()
             t_bal = await self._taker.get_balance()
@@ -102,7 +103,7 @@ class Engine:
         except Exception:
             lines.append("💰 잔고 조회 실패")
 
-        if pos:
+        if pos and total is not None:
             entry_total = pos.entry_total_balance
             if entry_total > 0:
                 pnl = total - entry_total
@@ -343,9 +344,18 @@ class Engine:
         except Exception:
             return
 
+        t_sym = self._taker.map_symbol(pos.pair)
+        try:
+            t_pos_size = abs(await self._taker.get_position_signed_size(t_sym))
+            t_mark = await self._taker.get_mark_price(t_sym)
+            t_notional = t_pos_size * t_mark if t_mark > 0 else 0
+            taker_margin_pct = (t_bal.equity / t_notional * 100) if t_notional > 0 else 100.0
+        except Exception:
+            taker_margin_pct = 100.0
+
         funding = await self._fetch_funding_for_pair(pos.pair)
         reason = should_exit(
-            pos, current_total, taker_margin_pct=100.0,
+            pos, current_total, taker_margin_pct=taker_margin_pct,
             spread_mtm=0.0, funding=funding,
             cfg_max_hold_days=self.cfg.MAX_HOLD_DAYS,
             cfg_margin_emergency_pct=self.cfg.MARGIN_EMERGENCY_PCT,
