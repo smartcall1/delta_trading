@@ -9,7 +9,7 @@ from exchanges.base import BaseExchange, Balance, OrderResult
 
 logger = logging.getLogger(__name__)
 
-STANDX_BASE_URL = "https://api.standx.io"
+STANDX_BASE_URL = "https://perps.standx.com"
 
 
 def _quantize(price: float, tick: float) -> float:
