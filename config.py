@@ -2,10 +2,17 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass, field
 from dotenv import load_dotenv
 
-load_dotenv()
+_env_file = None
+for i, arg in enumerate(sys.argv):
+    if arg == "--config" and i + 1 < len(sys.argv):
+        _env_file = sys.argv[i + 1]
+        break
+
+load_dotenv(_env_file)
 
 
 @dataclass
