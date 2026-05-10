@@ -19,5 +19,11 @@ def create_exchange(exchange_id: str, **kwargs) -> BaseExchange:
     elif exchange_id == "grvt":
         from exchanges.grvt import GRVTExchange
         return GRVTExchange(**kwargs)
+    elif exchange_id == "hotstuff":
+        from exchanges.hotstuff import HotstuffExchange
+        return HotstuffExchange(**kwargs)
+    elif exchange_id == "risex":
+        from exchanges.risex import RiseXExchange
+        return RiseXExchange(**kwargs)
     else:
-        raise ValueError(f"Unknown exchange: {exchange_id}. Available: dango, standx, hibachi, grvt")
+        raise ValueError(f"Unknown exchange: {exchange_id}. Available: dango, standx, hibachi, grvt, hotstuff, risex")

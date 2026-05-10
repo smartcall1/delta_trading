@@ -69,19 +69,30 @@ class Config:
     DUST_NOTIONAL_USD: float = float(os.getenv("DUST_NOTIONAL_USD", "5"))
 
     # ── 심볼 매핑 (거래소별) ──
-    # 형식: SYMBOL_MAP_DANGO=ETH:ethusd,BTC:btcusd
-    # 형식: SYMBOL_MAP_STANDX=ETH:ETH-PERP,BTC:BTC-PERP
     SYMBOL_MAP_DANGO: dict = field(default_factory=lambda: _parse_symbol_map(os.getenv("SYMBOL_MAP_DANGO", "")))
     SYMBOL_MAP_STANDX: dict = field(default_factory=lambda: _parse_symbol_map(os.getenv("SYMBOL_MAP_STANDX", "")))
     SYMBOL_MAP_HIBACHI: dict = field(default_factory=lambda: _parse_symbol_map(os.getenv("SYMBOL_MAP_HIBACHI", "")))
     SYMBOL_MAP_GRVT: dict = field(default_factory=lambda: _parse_symbol_map(os.getenv("SYMBOL_MAP_GRVT", "")))
+    SYMBOL_MAP_HOTSTUFF: dict = field(default_factory=lambda: _parse_symbol_map(os.getenv("SYMBOL_MAP_HOTSTUFF", "")))
+    SYMBOL_MAP_RISEX: dict = field(default_factory=lambda: _parse_symbol_map(os.getenv("SYMBOL_MAP_RISEX", "")))
 
     # ── Tick size (거래소별) ──
-    # 형식: TICK_SIZE_STANDX=ETH:0.01,BTC:0.1
     TICK_SIZE_DANGO: dict = field(default_factory=lambda: _parse_tick_map(os.getenv("TICK_SIZE_DANGO", "")))
     TICK_SIZE_STANDX: dict = field(default_factory=lambda: _parse_tick_map(os.getenv("TICK_SIZE_STANDX", "")))
     TICK_SIZE_HIBACHI: dict = field(default_factory=lambda: _parse_tick_map(os.getenv("TICK_SIZE_HIBACHI", "")))
     TICK_SIZE_GRVT: dict = field(default_factory=lambda: _parse_tick_map(os.getenv("TICK_SIZE_GRVT", "")))
+    TICK_SIZE_HOTSTUFF: dict = field(default_factory=lambda: _parse_tick_map(os.getenv("TICK_SIZE_HOTSTUFF", "")))
+    TICK_SIZE_RISEX: dict = field(default_factory=lambda: _parse_tick_map(os.getenv("TICK_SIZE_RISEX", "")))
+
+    # ── 거래소별 수수료 (maker/taker, 비율) ──
+    EXCHANGE_FEES: dict = field(default_factory=lambda: {
+        "dango": {"maker": 0.0, "taker": 0.0005},
+        "standx": {"maker": 0.0002, "taker": 0.0004},
+        "hibachi": {"maker": 0.0, "taker": 0.00045},
+        "grvt": {"maker": -0.0001, "taker": 0.0003},
+        "hotstuff": {"maker": 0.0001, "taker": 0.00035},
+        "risex": {"maker": 0.0, "taker": 0.0005},
+    })
 
     # ── 디렉토리 ──
     LOG_DIR: str = os.getenv("LOG_DIR", "logs")

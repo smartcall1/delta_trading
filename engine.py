@@ -36,6 +36,7 @@ class Engine:
 
         self._state_path = os.path.join(cfg.LOG_DIR, "bot_state.json")
         self._cycles_path = os.path.join(cfg.LOG_DIR, "cycles.jsonl")
+        self._pair_label = f"{maker.name}↔{taker.name}"
 
         self._spread_exit_confirms = 0
         self._pending_exit_reason: Optional[str] = None
@@ -51,7 +52,7 @@ class Engine:
 
         await self._tg.send_alert(
             f"<b>[🚀 START]</b> Delta-Neutral 봇\n"
-            f"Maker: {self._maker.name} | Taker: {self._taker.name}\n"
+            f"📡 {self._pair_label}\n"
             f"상태: {self.bot_state.state.value}"
         )
         await self._recovery_check()
@@ -290,6 +291,7 @@ class Engine:
         if pos.maker_size > 0:
             await self._tg.send_alert(
                 f"<b>[✅ ENTER]</b> {pos.pair} {pos.direction.value}\n"
+                f"📡 {self._pair_label}\n"
                 f"M: {pos.maker_size:.6f} / T: {pos.taker_size:.6f}\n"
                 f"청크: {pos.chunks_filled}/{self.cfg.ENTRY_CHUNKS}"
             )
@@ -367,7 +369,7 @@ class Engine:
 
             pos.exit_reason = reason
             self._transition(State.EXIT)
-            await self._tg.send_alert(f"<b>[🔔 EXIT]</b> {pos.pair} | {reason}")
+            await self._tg.send_alert(f"<b>[🔔 EXIT]</b> {pos.pair} | {reason}\n📡 {self._pair_label}")
         else:
             if self._spread_exit_confirms > 0:
                 self._spread_exit_confirms = 0
@@ -442,6 +444,7 @@ class Engine:
             self.bot_state.last_manual_alert = now
             await self._tg.send_alert(
                 f"<b>[⚠️ MANUAL]</b> {pos.pair} 수동 개입 필요\n"
+                f"📡 {self._pair_label}\n"
                 f"실패: {self.bot_state.exit_failure_count}회"
             )
         await asyncio.sleep(60)
@@ -677,6 +680,7 @@ class Engine:
         emoji = "🟢" if pnl >= 0 else "🔴"
         await self._tg.send_alert(
             f"<b>[🏁 EXIT]</b> #{cycle.cycle_id} {pos.pair}\n"
+            f"📡 {self._pair_label}\n"
             f"{emoji} PnL ${pnl:+,.2f} | {reason_override or pos.exit_reason}"
         )
         self.bot_state.position = None

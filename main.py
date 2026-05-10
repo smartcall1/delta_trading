@@ -57,6 +57,15 @@ def _build_exchange_kwargs(cfg: Config, role: str) -> dict:
             "private_key": getattr(cfg, f"{prefix}_PRIVATE_KEY"),
             "trading_account_id": getattr(cfg, f"{prefix}_ACCOUNT_ID"),
         })
+    elif exchange_id == "hotstuff":
+        base.update({
+            "private_key": getattr(cfg, f"{prefix}_PRIVATE_KEY"),
+        })
+    elif exchange_id == "risex":
+        base.update({
+            "account_address": getattr(cfg, f"{prefix}_ACCOUNT_ADDRESS"),
+            "private_key": getattr(cfg, f"{prefix}_PRIVATE_KEY"),
+        })
     else:
         raise ValueError(f"Unknown exchange: {exchange_id}")
 
