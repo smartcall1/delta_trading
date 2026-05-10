@@ -70,6 +70,7 @@ class BotState:
             "state": self.state.value,
             "cycle_count": self.cycle_count,
             "exit_failure_count": self.exit_failure_count,
+            "suspended_since": self.suspended_since,
         }
         if self.position:
             data["position"] = asdict(self.position)

@@ -36,7 +36,7 @@ class Config:
 
     # ── 트레이딩 파라미터 ──
     LEVERAGE: int = int(os.getenv("LEVERAGE", "3"))
-    PAIRS: list = field(default_factory=lambda: os.getenv("PAIRS", "ETH").split(","))
+    PAIRS: list[str] = field(default_factory=lambda: os.getenv("PAIRS", "ETH").split(","))
     ENTRY_CHUNKS: int = int(os.getenv("ENTRY_CHUNKS", "10"))
     EXIT_CHUNKS: int = int(os.getenv("EXIT_CHUNKS", "10"))
 
